@@ -4,9 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Level Up OS</title>
-    <script src="https://www.gstatic.com/firebasejs/9.19.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.19.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.19.1/firebase-firestore-compat.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
@@ -17,7 +14,6 @@
         .btn { padding: 0.5rem 1rem; border-radius: 0.5rem; font-weight: bold; transition: all 0.2s; }
         .btn-primary { background-color: #8B5CF6; color: white; }
         .btn-primary:hover { background-color: #7C3AED; }
-        .btn-primary:disabled { background-color: #585561; cursor: not-allowed; }
         .btn-danger { background-color: #DC2626; color: white; }
         .btn-danger:hover { background-color: #B91C1C; }
         .btn-secondary { background-color: #374151; color: white; }
@@ -29,18 +25,13 @@
         .toast-success { border-color: #22C55E; }
         .toast-error { border-color: #EF4444; }
         #modal-overlay { position: fixed; inset: 0; background-color: rgba(0,0,0,0.7); z-index: 5000; display: flex; align-items: center; justify-content: center; }
-        #app-container, #auth-screen { transition: opacity 0.5s; }
+        #app-container { transition: opacity 0.5s; }
+        .editable-name:hover { background-color: #374151; cursor: pointer; }
     </style>
 </head>
 <body class="bg-[#121212]">
 
-    <div id="auth-screen" class="max-w-md mx-auto h-screen flex flex-col justify-center items-center p-4 space-y-4">
-        <h1 class="text-4xl font-orbitron font-bold">Level Up OS</h1>
-        <p class="text-gray-400 text-center">Sincronize seu progresso em todos os dispositivos.</p>
-        <button id="login-btn" class="btn btn-primary flex items-center gap-2"><i class="fab fa-google"></i> Login com Google</button>
-    </div>
-
-    <div id="app-container" class="hidden max-w-md mx-auto h-screen flex flex-col">
+    <div id="app-container" class="max-w-md mx-auto h-screen flex flex-col">
         <main class="flex-grow overflow-y-auto p-4 pb-20 space-y-6">
             </main>
         <nav id="main-nav" class="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-[#1E1E1E] border-t border-gray-700 flex justify-around p-2"></nav>
@@ -49,127 +40,26 @@
     <div id="toast-container"></div>
     <div id="modal-overlay" class="hidden"></div>
 
-    <script type="module" id="main-script">
-        // --- 1. CONFIGURAÇÃO ---
-        const firebaseConfig = {
-            // ✅ COLE AQUI O OBJETO DE CONFIGURAÇÃO DO SEU FIREBASE
-            apiKey: "AIza...",
-            authDomain: "...",
-            projectId: "...",
-            storageBucket: "...",
-            messagingSenderId: "...",
-            appId: "...",
-        };
-
-        const GEMINI_API_KEY = "SUA_API_KEY_AQUI"; // ✅ COLE AQUI SUA CHAVE DO GEMINI
-
-        // --- 2. MÓDULOS DO APLICATIVO ---
-
-        const FirebaseService = {
-            // ... (Implementação detalhada no final do script)
-        };
-        
-        const AIService = {
-            // ... (Implementação detalhada no final do script)
-        };
+    <script id="main-script">
+        // --- MÓDULOS DO APLICATIVO ---
 
         const Player = {
-            // ... (Implementação detalhada no final do script)
-        };
-
-        const UI = {
-            // ... (Implementação detalhada no final do script)
-        };
-
-        const App = {
-            // ... (Implementação detalhada no final do script)
-        };
-
-        // --- 3. INICIALIZAÇÃO ---
-        FirebaseService.init(firebaseConfig);
-        FirebaseService.onAuthStateChange(App.handleAuthStateChange);
-        
-        // --- 4. IMPLEMENTAÇÃO DOS MÓDULOS (versão completa) ---
-
-        // Módulo de Serviço do Firebase
-        Object.assign(FirebaseService, {
-            db: null,
-            auth: null,
-            init(config) {
-                firebase.initializeApp(config);
-                this.db = firebase.firestore();
-                this.auth = firebase.auth();
-            },
-            onAuthStateChange(callback) {
-                this.auth.onAuthStateChanged(callback);
-            },
-            signInWithGoogle() {
-                const provider = new firebase.auth.GoogleAuthProvider();
-                return this.auth.signInWithPopup(provider);
-            },
-            signOut() {
-                return this.auth.signOut();
-            },
-            async loadUserData(userId) {
-                const docRef = this.db.collection('users').doc(userId);
-                const doc = await docRef.get();
-                return doc.exists ? doc.data() : null;
-            },
-            saveUserData(userId, data) {
-                return this.db.collection('users').doc(userId).set(data, { merge: true });
-            }
-        });
-
-        // Módulo de Serviço de IA
-        Object.assign(AIService, {
-            genAI: null,
-            ATTRIBUTES_LIST: ['Força', 'Inteligência', 'Disciplina', 'Carisma', 'Criatividade'],
-            async _getAImodel() {
-                if (!this.genAI) {
-                    if (!GEMINI_API_KEY || GEMINI_API_KEY === "SUA_API_KEY_AQUI") return null;
-                    const { GoogleGenerativeAI } = await import("https://esm.run/@google/generative-ai");
-                    this.genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-                }
-                return this.genAI.getGenerativeModel({ model: "gemini-pro" });
-            },
-            async categorizeMission(title) {
-                const model = await this._getAImodel();
-                if (!model) return 'Disciplina';
-                const prompt = `Categorize a tarefa "${title}" em uma das seguintes: ${this.ATTRIBUTES_LIST.join(', ')}. Retorne APENAS a categoria.`;
-                try {
-                    const result = await model.generateContent(prompt);
-                    const category = (await result.response.text()).trim();
-                    return this.ATTRIBUTES_LIST.includes(category) ? category : 'Disciplina';
-                } catch { return 'Disciplina'; }
-            },
-            async breakdownMission(goal) {
-                const model = await this._getAImodel();
-                if (!model) return null;
-                const prompt = `Quebre o objetivo "${goal}" em 5 missões diárias. Para cada missão, determine a categoria: ${this.ATTRIBUTES_LIST.join(', ')}. Retorne EXCLUSIVAMENTE um array de objetos JSON com chaves "title" e "category".`;
-                try {
-                    const result = await model.generateContent(prompt);
-                    const jsonText = (await result.response.text()).replace(/```json|```/g, '').trim();
-                    return JSON.parse(jsonText);
-                } catch { return null; }
-            }
-        });
-
-        // Módulo de Dados do Jogador
-        Object.assign(Player, {
             state: null,
+            ATTRIBUTES_LIST: ['Força', 'Inteligência', 'Disciplina', 'Carisma', 'Criatividade'],
             defaultState: {
                 name: "Despertado", level: 1, exp: 0, title: "Novato",
                 attributes: { 'Força': 0, 'Inteligência': 0, 'Disciplina': 0, 'Carisma': 0, 'Criatividade': 0 },
                 missions: { daily: [], main: [], side: [] },
-                history: [{ timestamp: Date.now(), text: "Jornada iniciada." }]
+                history: [{ timestamp: Date.now(), text: "Jornada iniciada." }],
+                lastLogin: new Date().toLocaleDateString('pt-BR')
             },
-            load(data) {
-                this.state = data ? { ...this.defaultState, ...data } : { ...this.defaultState };
+            load() {
+                const savedData = localStorage.getItem('levelUpOsData');
+                this.state = savedData ? JSON.parse(savedData) : { ...this.defaultState };
                 this.checkDailyReset();
             },
-            async save() {
-                const userId = FirebaseService.auth.currentUser?.uid;
-                if (userId) await FirebaseService.saveUserData(userId, this.state);
+            save() {
+                localStorage.setItem('levelUpOsData', JSON.stringify(this.state));
             },
             addHistory(text) {
                 this.state.history.unshift({ timestamp: Date.now(), text });
@@ -226,7 +116,7 @@
                     this.state.level++;
                     this.state.exp -= expToNextLevel;
                     this.addHistory(`LEVEL UP! Você alcançou o Nível ${this.state.level}!`);
-                    this.checkLevelUp(); // Check for multi-level up
+                    this.checkLevelUp();
                 }
             },
             addMission(data) {
@@ -254,10 +144,9 @@
                     UI.render();
                 }
             }
-        });
+        };
 
-        // Módulo de UI
-        Object.assign(UI, {
+        const UI = {
             elements: {
                 main: document.querySelector('main'),
                 nav: document.getElementById('main-nav'),
@@ -297,21 +186,16 @@
                 const dailyMissionsHTML = this.getMissionsListHTML('daily');
                 return `
                     <div class="text-center">
-                        <h1 class="text-3xl font-bold font-orbitron">${name}</h1>
+                        <h1 id="player-name" class="text-3xl font-bold font-orbitron p-2 rounded editable-name">${name}</h1>
                         <p class="text-purple-400 text-lg">${title}</p>
                     </div>
                     <div class="card p-4 rounded-lg">
-                        <div class="flex justify-between items-center mb-2">
-                            <span class="font-bold font-orbitron">NÍVEL ${level}</span>
-                            <span class="text-sm">${exp} / ${expToNextLevel} EXP</span>
-                        </div>
+                        <div class="flex justify-between items-center mb-2"><span class="font-bold font-orbitron">NÍVEL ${level}</span><span class="text-sm">${exp} / ${expToNextLevel} EXP</span></div>
                         <div class="w-full bg-gray-700 rounded-full h-4"><div class="bg-purple-500 h-4 rounded-full" style="width: ${expPercentage}%"></div></div>
                     </div>
                     <div>
-                        <h2 class="text-xl font-bold mb-3 font-orbitron">MISSÕES DIÁRIAS</h2>
-                        <div class="space-y-2">${dailyMissionsHTML}</div>
-                    </div>
-                `;
+                        <h2 class="text-xl font-bold mb-3 font-orbitron">MISSÕES DIÁRIAS</h2><div class="space-y-2">${dailyMissionsHTML}</div>
+                    </div>`;
             },
             getMissionsHTML() {
                 const mainMissionsHTML = this.getMissionsListHTML('main');
@@ -319,33 +203,24 @@
                 return `
                     <h1 class="text-2xl font-bold font-orbitron">CENTRAL DE MISSÕES</h1>
                     <button id="add-mission-btn" class="btn btn-primary w-full"><i class="fas fa-plus mr-2"></i>Adicionar Nova Missão</button>
-                    <div class="card p-4 rounded-lg space-y-3">
-                        <h2 class="text-lg font-bold flex items-center"><i class="fas fa-magic-sparkles mr-2 text-yellow-400"></i>Assistente de IA</h2>
-                        <p class="text-sm text-gray-400">Transforme um grande objetivo em missões diárias.</p>
-                        <input type="text" id="ai-mission-input" placeholder="Ex: Aprender a programar em Python" class="form-input">
-                        <button id="ai-breakdown-btn" class="btn btn-secondary w-full flex items-center justify-center"><i class="fas fa-cogs mr-2"></i>Quebrar em Missões</button>
-                        <div id="ai-results" class="space-y-2 mt-2"></div>
-                    </div>
                     <div><h2 class="text-xl font-bold mb-3 font-orbitron">PRINCIPAIS</h2><div class="space-y-2">${mainMissionsHTML}</div></div>
-                    <div><h2 class="text-xl font-bold mb-3 font-orbitron">SECUNDÁRIAS</h2><div class="space-y-2">${sideMissionsHTML}</div></div>
-                `;
+                    <div><h2 class="text-xl font-bold mb-3 font-orbitron">SECUNDÁRIAS</h2><div class="space-y-2">${sideMissionsHTML}</div></div>`;
             },
             getMissionsListHTML(type) {
                 const missions = Player.state.missions[type] || [];
                 if (missions.length === 0) return `<p class="text-gray-500 text-sm p-2">Nenhuma missão aqui.</p>`;
                 return missions.map(mission => `
                     <div class="card p-3 rounded-lg flex items-center justify-between">
-                        <div class="flex items-center">
-                            <input type="checkbox" data-id="${mission.id}" data-type="${type}" ${mission.done ? 'checked' : ''} class="h-5 w-5 rounded text-purple-500 bg-gray-700 border-gray-600 focus:ring-purple-500">
-                            <label class="ml-3 ${mission.done ? 'line-through text-gray-500' : ''}">${mission.title}</label>
+                        <div class="flex items-center flex-grow min-w-0 mr-2">
+                            <input type="checkbox" data-id="${mission.id}" data-type="${type}" ${mission.done ? 'checked' : ''} class="h-5 w-5 rounded text-purple-500 bg-gray-700 border-gray-600 focus:ring-purple-500 flex-shrink-0">
+                            <label class="ml-3 truncate ${mission.done ? 'line-through text-gray-500' : ''}">${mission.title}</label>
                         </div>
-                        <div class="flex items-center gap-2">
+                        <div class="flex items-center gap-2 flex-shrink-0">
                            <span class="text-sm font-bold text-yellow-400">+${mission.exp} EXP</span>
                            <button class="edit-mission-btn" data-id="${mission.id}" data-type="${type}"><i class="fas fa-pencil text-gray-400 hover:text-white"></i></button>
                            <button class="delete-mission-btn" data-id="${mission.id}" data-type="${type}"><i class="fas fa-trash text-gray-400 hover:text-red-500"></i></button>
                         </div>
-                    </div>
-                `).join('');
+                    </div>`).join('');
             },
             getEvolutionHTML() {
                 const { attributes } = Player.state;
@@ -367,41 +242,46 @@
                 return `
                     <h1 class="text-2xl font-bold font-orbitron">SISTEMA</h1>
                     <div class="card p-4 rounded-lg">
-                        <h2 class="text-lg font-bold mb-2">Log de Atividades</h2>
-                        <div class="h-64 overflow-y-auto space-y-2 p-2 bg-black/20 rounded">${historyHTML}</div>
+                        <h2 class="text-lg font-bold mb-2">Log de Atividades</h2><div class="h-64 overflow-y-auto space-y-2 p-2 bg-black/20 rounded">${historyHTML}</div>
                     </div>
                     <div class="card p-4 rounded-lg">
-                        <h2 class="text-lg font-bold mb-2">Gerenciamento</h2>
-                        <button id="logout-btn" class="btn btn-secondary w-full mb-2">Logout</button>
+                        <h2 class="text-lg font-bold mb-2">Gerenciamento de Dados</h2>
                         <button id="reset-btn" class="btn btn-danger w-full">Resetar Progresso</button>
-                    </div>
-                `;
+                    </div>`;
             },
             setupScreenEventListeners(screen) {
+                const setupMissionListeners = () => {
+                    document.querySelectorAll('input[type="checkbox"]').forEach(el => el.addEventListener('change', () => Player.toggleMission(el.dataset.type, parseInt(el.dataset.id))));
+                    document.querySelectorAll('.edit-mission-btn').forEach(el => el.addEventListener('click', () => {
+                        const mission = Player.state.missions[el.dataset.type].find(m => m.id === parseInt(el.dataset.id));
+                        if (mission) this.showMissionModal(mission, el.dataset.type);
+                    }));
+                    document.querySelectorAll('.delete-mission-btn').forEach(el => el.addEventListener('click', () => {
+                        if (confirm("Tem certeza que quer apagar esta missão?")) Player.deleteMission(el.dataset.type, parseInt(el.dataset.id));
+                    }));
+                };
                 switch(screen) {
                     case 'dashboard':
+                        setupMissionListeners();
+                        document.getElementById('player-name').addEventListener('click', () => {
+                            const newName = prompt("Digite seu novo nome:", Player.state.name);
+                            if (newName && newName.trim() !== '') {
+                                Player.state.name = newName.trim();
+                                Player.save();
+                                this.render();
+                            }
+                        });
+                        break;
                     case 'missions':
-                        document.querySelectorAll('input[type="checkbox"]').forEach(el => el.addEventListener('change', () => Player.toggleMission(el.dataset.type, parseInt(el.dataset.id))));
-                        document.querySelectorAll('.edit-mission-btn').forEach(el => el.addEventListener('click', () => {
-                            const mission = Player.state.missions[el.dataset.type].find(m => m.id === parseInt(el.dataset.id));
-                            if (mission) this.showMissionModal(mission);
-                        }));
-                        document.querySelectorAll('.delete-mission-btn').forEach(el => el.addEventListener('click', () => {
-                            if (confirm("Tem certeza que quer apagar esta missão?")) Player.deleteMission(el.dataset.type, parseInt(el.dataset.id));
-                        }));
-                        if (screen === 'missions') {
-                            document.getElementById('add-mission-btn').addEventListener('click', () => this.showMissionModal());
-                            document.getElementById('ai-breakdown-btn').addEventListener('click', App.handleAIBreakdown);
-                        }
+                        setupMissionListeners();
+                        document.getElementById('add-mission-btn').addEventListener('click', () => this.showMissionModal());
                         break;
                     case 'system':
-                        document.getElementById('logout-btn').addEventListener('click', FirebaseService.signOut);
                         document.getElementById('reset-btn').addEventListener('click', () => {
-                            if (confirm("CUIDADO! Isso apagará TODO o seu progresso na nuvem. Ação irreversível. Deseja continuar?")) {
-                                Player.state = { ...Player.defaultState };
-                                Player.addHistory("Progresso resetado.");
-                                Player.save();
-                                UI.render();
+                            if (confirm("CUIDADO! Isso apagará TODO o seu progresso neste dispositivo. Ação irreversível. Deseja continuar?")) {
+                                localStorage.removeItem('levelUpOsData');
+                                Player.load();
+                                this.render();
                             }
                         });
                         break;
@@ -414,18 +294,21 @@
                 this.elements.toastContainer.appendChild(toast);
                 setTimeout(() => toast.remove(), 3000);
             },
-            showMissionModal(mission = null) {
+            showMissionModal(mission = null, type = 'main') {
                 const isEditing = mission !== null;
+                const categoriesHTML = Player.ATTRIBUTES_LIST.map(cat => `<option value="${cat}" ${mission?.category === cat ? 'selected' : ''}>${cat}</option>`).join('');
+                
                 this.elements.modalOverlay.innerHTML = `
                     <div class="card p-6 rounded-lg w-11/12 space-y-4" onclick="event.stopPropagation()">
                         <h2 class="text-xl font-bold font-orbitron">${isEditing ? 'Editar Missão' : 'Nova Missão'}</h2>
                         <form id="mission-form" class="space-y-4">
                             <input type="text" name="title" placeholder="Título da Missão" class="form-input" value="${mission?.title || ''}" required>
                             <input type="number" name="exp" placeholder="EXP" class="form-input" value="${mission?.exp || ''}" required>
+                            <select name="category" class="form-input">${categoriesHTML}</select>
                             <select name="type" class="form-input">
-                                <option value="main" ${mission?.type === 'main' ? 'selected' : ''}>Principal</option>
-                                <option value="side" ${mission?.type === 'side' ? 'selected' : ''}>Secundária</option>
-                                <option value="daily" ${mission?.type === 'daily' ? 'selected' : ''}>Diária</option>
+                                <option value="main" ${type === 'main' ? 'selected' : ''}>Principal</option>
+                                <option value="side" ${type === 'side' ? 'selected' : ''}>Secundária</option>
+                                <option value="daily" ${type === 'daily' ? 'selected' : ''}>Diária</option>
                             </select>
                             <div class="flex justify-end gap-2">
                                 <button type="button" id="modal-cancel-btn" class="btn btn-secondary">Cancelar</button>
@@ -438,96 +321,41 @@
                 document.getElementById('modal-cancel-btn').addEventListener('click', () => this.elements.modalOverlay.classList.add('hidden'));
                 this.elements.modalOverlay.addEventListener('click', () => this.elements.modalOverlay.classList.add('hidden'));
                 
-                document.getElementById('mission-form').addEventListener('submit', async (e) => {
+                document.getElementById('mission-form').addEventListener('submit', (e) => {
                     e.preventDefault();
                     const formData = new FormData(e.target);
                     const data = Object.fromEntries(formData.entries());
                     data.exp = parseInt(data.exp);
 
-                    const submitBtn = e.target.querySelector('button[type="submit"]');
-                    submitBtn.disabled = true;
-                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-
                     if (isEditing) {
+                        // Se o tipo mudou, precisa remover da lista antiga e adicionar na nova
+                        if(type !== data.type) Player.deleteMission(type, mission.id);
                         Player.updateMission(mission.id, data);
                         this.showToast("Missão atualizada!");
                     } else {
-                        const category = await AIService.categorizeMission(data.title);
-                        data.category = category;
                         Player.addMission(data);
-                        this.showToast(`Missão criada na categoria: ${category}`);
+                        this.showToast(`Missão criada na categoria: ${data.category}`);
                     }
                     this.elements.modalOverlay.classList.add('hidden');
                 });
             }
-        });
+        };
 
-        // Módulo Principal do App
-        Object.assign(App, {
+        const App = {
             currentScreen: 'dashboard',
             init() {
-                document.getElementById('login-btn').addEventListener('click', FirebaseService.signInWithGoogle);
+                Player.load();
                 UI.render();
-            },
-            async handleAuthStateChange(user) {
-                const authScreen = document.getElementById('auth-screen');
-                const appContainer = document.getElementById('app-container');
-                if (user) {
-                    const userData = await FirebaseService.loadUserData(user.uid);
-                    Player.load(userData);
-                    Player.state.name = user.displayName;
-                    this.init();
-                    authScreen.style.opacity = '0';
-                    setTimeout(() => {
-                        authScreen.classList.add('hidden');
-                        appContainer.classList.remove('hidden');
-                        appContainer.style.opacity = '1';
-                    }, 500);
-                } else {
-                    Player.load(null);
-                    authScreen.classList.remove('hidden');
-                    authScreen.style.opacity = '1';
-                    appContainer.style.opacity = '0';
-                    setTimeout(() => appContainer.classList.add('hidden'), 500);
-                }
             },
             switchScreen(screen) {
                 this.currentScreen = screen;
                 UI.render();
-            },
-            async handleAIBreakdown() {
-                const input = document.getElementById('ai-mission-input');
-                const goal = input.value;
-                if (!goal) return UI.showToast("Digite um objetivo para a IA.", 'error');
-
-                const btn = document.getElementById('ai-breakdown-btn');
-                btn.disabled = true;
-                btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Analisando...';
-
-                const suggestions = await AIService.breakdownMission(goal);
-                
-                const resultsContainer = document.getElementById('ai-results');
-                resultsContainer.innerHTML = '';
-
-                if (suggestions) {
-                    suggestions.forEach(sugg => {
-                        const card = document.createElement('div');
-                        card.className = 'card p-2 rounded-lg flex justify-between items-center';
-                        card.innerHTML = `<span class="text-sm">${sugg.title}</span><button class="btn btn-primary text-xs">Adicionar</button>`;
-                        card.querySelector('button').addEventListener('click', () => {
-                            Player.addMission({ title: sugg.title, exp: 20, type: 'daily', category: sugg.category });
-                            UI.showToast("Missão diária adicionada!");
-                            card.remove();
-                        });
-                        resultsContainer.appendChild(card);
-                    });
-                } else {
-                    UI.showToast("Não foi possível gerar missões.", "error");
-                }
-                btn.disabled = false;
-                btn.innerHTML = '<i class="fas fa-cogs mr-2"></i>Quebrar em Missões';
             }
-        });
+        };
+
+        // --- INICIALIZAÇÃO ---
+        App.init();
+
     </script>
 </body>
 </html>
