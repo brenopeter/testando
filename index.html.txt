@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Level Up: Seu QG Pessoal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Roboto', sans-serif; background-color: #121212; color: #E0E0E0; }
+        .font-orbitron { font-family: 'Orbitron', sans-serif; }
+        .nav-active { color: #A78BFA; transform: scale(1.1); }
+        .nav-item { transition: all 0.2s ease-in-out; }
+        .card { background-color: #1E1E1E; border: 1px solid #333; }
+        .btn-primary { background-color: #8B5CF6; transition: background-color 0.3s; }
+        .btn-primary:hover { background-color: #7C3AED; }
+    </style>
+</head>
+<body class="overflow-hidden">
+
+    <!-- Container Principal da Aplicação -->
+    <div id="app-container" class="hidden max-w-md mx-auto h-screen flex flex-col">
+        <main class="flex-grow overflow-y-auto p-4 pb-20">
+            <div id="screen-dashboard" class="space-y-6"></div>
+            <div id="screen-missions" class="hidden"></div>
+            <div id="screen-evolution" class="hidden"></div>
+            <div id="screen-system" class="hidden"></div>
+        </main>
+        <nav id="main-nav" class="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-[#1E1E1E] border-t border-gray-700 flex justify-around p-2"></nav>
+    </div>
+
+    <script>
+        // --- ESTADO DA APLICAÇÃO ---
+        let player;
+
+        const defaultPlayerState = {
+            name: "Despertado",
+            level: 1,
+            exp: 0,
+            attributePoints: 0,
+            title: "Novato",
+            missions: {
+                daily: [{ id: 1, title: "Exercício Físico", exp: 20, done: false }],
+                main: [],
+                side: []
+            },
+            skills: [{ id: 1, name: "Organização", level: 1 }],
+            lastLogin: new Date().toDateString()
+        };
+
+        // --- LÓGICA DE DADOS (LOCALSTORAGE) ---
+        function saveProgress() {
+            localStorage.setItem('playerData', JSON.stringify(player));
+        }
+
+        function loadProgress() {
+            const savedData = localStorage.getItem('playerData');
+            if (savedData) {
+                player = JSON.parse(savedData);
+                // Resetar missões diárias se for um novo dia
+                const today = new Date().toDateString();
+                if (player.lastLogin !== today) {
+                    if (player.missions && player.missions.daily) {
+                        player.missions.daily.forEach(m => m.done = false);
+                    }
+                    player.lastLogin = today;
+                    saveProgress();
+                }
+            } else {
+                // Se não há dados, cria um novo jogador
+                player = JSON.parse(JSON.stringify(defaultPlayerState));
+                saveProgress();
+            }
+        }
+
+        function resetProgress() {
+            if (confirm("Tem a certeza que quer apagar todo o seu progresso? Esta ação não pode ser desfeita.")) {
+                localStorage.removeItem('playerData');
+                location.reload();
+            }
+        }
+
+        // --- LÓGICA DE INICIALIZAÇÃO ---
+        function initApp() {
+            loadProgress();
+            document.getElementById('app-container').classList.remove('hidden');
+            renderApp();
+        }
+
+        // --- FUNÇÕES DE RENDERIZAÇÃO DA APLICAÇÃO ---
+        function renderApp() {
+            renderDashboard();
+            renderNavigation();
+            renderSystemScreen();
+            // Adicione aqui a renderização de outras telas se necessário
+            switchScreen('dashboard');
+        }
+
+        function renderDashboard() {
+            const dashboard = document.getElementById('screen-dashboard');
+            const expToNextLevel = 1000; // Simplificado para o exemplo
+            const expPercentage = (player.exp / expToNextLevel) * 100;
+
+            dashboard.innerHTML = `
+                <div>
+                    <h1 class="text-3xl font-bold font-orbitron">${player.name}</h1>
+                    <p class="text-purple-400 text-lg">${player.title}</p>
+                </div>
+                <div class="card p-4 rounded-lg">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="font-bold font-orbitron">NÍVEL ${player.level}</span>
+                        <span class="text-sm">${player.exp} / ${expToNextLevel} EXP</span>
+                    </div>
+                    <div class="w-full bg-gray-700 rounded-full h-4">
+                        <div class="bg-purple-500 h-4 rounded-full" style="width: ${expPercentage}%"></div>
+                    </div>
+                </div>
+                <div>
+                    <h2 class="text-xl font-bold mb-3 font-orbitron">MISSÕES DIÁRIAS</h2>
+                    <div id="dashboard-daily-missions" class="space-y-2">
+                        <!-- Missões diárias serão inseridas aqui -->
+                    </div>
+                </div>
+            `;
+            renderDailyMissionsOnDashboard();
+        }
+
+        function renderDailyMissionsOnDashboard() {
+            const container = document.getElementById('dashboard-daily-missions');
+            container.innerHTML = ''; // Limpa antes de renderizar
+            if (player.missions.daily.length === 0) {
+                container.innerHTML = <p class="text-gray-500 text-sm">Nenhuma missão diária definida.</p>;
+                return;
+            }
+            player.missions.daily.forEach(mission => {
+                const missionEl = document.createElement('div');
+                missionEl.className = 'card p-3 rounded-lg flex items-center justify-between';
+                missionEl.innerHTML = `
+                    <div class="flex items-center">
+                        <input type="checkbox" id="dash-mission-${mission.id}" ${mission.done ? 'checked' : ''} class="h-5 w-5 rounded text-purple-500 bg-gray-700 border-gray-600 focus:ring-purple-500">
+                        <label for="dash-mission-${mission.id}" class="ml-3 ${mission.done ? 'line-through text-gray-500' : ''}">${mission.title}</label>
+                    </div>
+                    <span class="text-sm font-bold text-yellow-400">+${mission.exp} EXP</span>
+                `;
+                missionEl.querySelector('input').onchange = () => {
+                    toggleMission('daily', mission.id);
+                };
+                container.appendChild(missionEl);
+            });
+        }
+
+        function toggleMission(type, id) {
+            const mission = player.missions[type].find(m => m.id === id);
+            if (!mission) return;
+
+            mission.done = !mission.done;
+            if (mission.done) {
+                player.exp += mission.exp;
+            } else {
+                player.exp -= mission.exp;
+            }
+            // Adicionar lógica de level up aqui se desejar
+            saveProgress();
+            renderDashboard(); // Re-renderiza o painel para atualizar a EXP e o estado da checkbox
+        }
+
+        function renderNavigation() {
+            const nav = document.getElementById('main-nav');
+            nav.innerHTML = `
+                <button onclick="switchScreen('dashboard')" class="nav-item nav-active flex flex-col items-center w-1/4"><i class="fas fa-user-circle text-2xl"></i><span class="text-xs">Painel</span></button>
+                <button onclick="switchScreen('missions')" class="nav-item flex flex-col items-center w-1/4"><i class="fas fa-tasks text-2xl"></i><span class="text-xs">Missões</span></button>
+                <button onclick="switchScreen('evolution')" class="nav-item flex flex-col items-center w-1/4"><i class="fas fa-chart-line text-2xl"></i><span class="text-xs">Evolução</span></button>
+                <button onclick="switchScreen('system')" class="nav-item flex flex-col items-center w-1/4"><i class="fas fa-cog text-2xl"></i><span class="text-xs">Sistema</span></button>
+            `;
+        }
+        
+        function renderSystemScreen() {
+            const system = document.getElementById('screen-system');
+            system.innerHTML = `
+                <h1 class="text-2xl font-bold font-orbitron">SISTEMA</h1>
+                <div class="card p-4 rounded-lg">
+                    <h2 class="text-lg font-bold mb-2">Gerenciamento de Dados</h2>
+                    <button onclick="resetProgress()" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg">Apagar Progresso</button>
+                    <p class="text-xs text-gray-500 mt-2">Atenção: Isto apagará permanentemente os seus dados neste dispositivo.</p>
+                </div>
+            `;
+        }
+
+        function switchScreen(screenId) {
+            document.querySelectorAll('#app-container main > div').forEach(div => div.classList.add('hidden'));
+            document.getElementById(screen-${screenId}).classList.remove('hidden');
+            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('nav-active'));
+            document.querySelector(button[onclick="switchScreen('${screenId}')"]).classList.add('nav-active');
+        }
+
+        // --- EXPOR FUNÇÕES GLOBAIS ---
+        window.switchScreen = switchScreen;
+        window.resetProgress = resetProgress;
+
+        // --- INICIAR APLICAÇÃO ---
+        initApp();
+    </script>
+</body>
+</html>
